@@ -1,0 +1,120 @@
+<?php
+session_start();
+include 'config.php';
+
+// เช็คว่ามีการส่งค่า search มาหรือไม่
+if(isset($_GET['search'])) {
+    $search = $_GET['search'];
+    // สร้าง query สำหรับค้นหาชื่อลูกค้า
+    $query = mysqli_query($conn, "SELECT * FROM orders WHERE fullname LIKE '%$search%'");
+} else {
+    // ถ้าไม่ได้ส่งค่า search มา ให้แสดงข้อมูลทั้งหมด
+    $query = mysqli_query($conn, "SELECT * FROM orders");
+}
+$rows = mysqli_num_rows($query);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Orders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link href="<?php echo $base_url; ?>/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?php echo $base_url; ?>/assets/fontawesome/css/fontawesome.min.css" rel="stylesheet"> 
+    <link href="<?php echo $base_url; ?>/assets/fontawesome/css/brands.min.css" rel="stylesheet"> 
+    <link href="<?php echo $base_url; ?>/assets/fontawesome/css/solid.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://images.unsplash.com/photo-1492551557933-34265f7af79e?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        .white-text {
+            color: white;
+        }
+        .form-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .form-status select, .form-status button {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body class="bg-body-tertiary">
+    <?php include 'include/header_admin.php'; ?>
+    <div class="container" style="margin-top: 30px;">
+        <?php if(!empty($_SESSION['message'])): ?>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <?php echo $_SESSION['message']; ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php unset($_SESSION['message']); ?>
+        <?php endif; ?>
+
+        <!-- Form ค้นหาข้อมูล -->
+        <form method="GET" action="" class="d-flex align-items-center">
+            <input type="text" id="search" name="search" placeholder="ป้อนชื่อลูกค้า" style="font-size: 15px; height: 30px;">
+            <button type="submit" class="btn btn-primary" style="font-size: 15px; height: 30px;">ค้นหา</button>
+        </form>
+
+        <div class="w3-container">
+            <h2 class="white-text"><center>สมาชิกที่ได้ทำการสั่งซื้อสินค้า</center></h2>
+            <br>
+        </div>
+
+        <table class="w3-table-all">
+            <tr class="w3-blue">
+                <th>ลำดับ</th>
+                <th>วันที่</th>
+                <th>ชื่อลูกค้า</th>
+                <th>ที่อยู่ลูกค้า</th>
+                <th>ชื่อสินค้าที่สั่ง</th>
+                <th>เบอร์โทรศัพท์</th>
+                <th>สถานะ</th>
+                <th>อัพเดทสถานะ</th>
+                <th>แก้ไขข้อมูล</th>
+                <th>ลบ</th>
+            </tr>
+            
+            <?php
+            $count = 1;
+            foreach($query as $data) {
+            ?>
+            <tr>
+                <td><?php echo $count ?></td>
+                <td><?php echo $data['order_date']?></td>
+                <td><?php echo $data['fullname']?></td>
+                <td><?php echo $data['ad_dress']?></td>
+                <td><?php echo $data['name_product']?></td>
+                <td><?php echo $data['tel']?></td>
+                <td><?php echo $data['status']?></td>
+                <td>
+                    <form method="POST" action="update_status.php" class="form-status">
+                        <input type="hidden" name="id" value="<?php echo $data['id']; ?>">
+                        <select name="status" class="form-select">
+                            <option value="รอดำเนินการ" <?php echo ($data['status'] == 'Pending') ? 'selected' : ''; ?>>รอดำเนินการ</option>
+                            <option value="กำลังจัดส่ง" <?php echo ($data['status'] == 'Shipped') ? 'selected' : ''; ?>>กำลังจัดส่ง</option>
+                            <option value="จัดส่งแล้ว" <?php echo ($data['status'] == 'Delivered') ? 'selected' : ''; ?>>จัดส่งแล้ว</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-success">อัพเดท</button>
+                    </form>
+                </td>
+                <td><a href="edit_order.php?id=<?php echo $data['id']; ?>" class="btn btn-sm btn-primary">แก้ไข</a></td>
+                <td>
+                    <form method="POST" action="delete_order.php">
+                        <input type="hidden" name="id" value="<?php echo $data['id']; ?>">
+                        <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
+                    </form>
+                </td>
+                
+            </tr>
+            <?php 
+                $count++;
+            } ?>
+        </table>
+    </div>
+</body>
+</html>
